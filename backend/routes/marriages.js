@@ -45,10 +45,37 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+async function validateMarriage(husband_id, wife_id, excludeId = null) {
+  const genders = await pool.query(
+    'SELECT id, gender FROM people WHERE id = $1 OR id = $2',
+    [husband_id, wife_id]
+  );
+  const byId = Object.fromEntries(genders.rows.map(r => [r.id, r.gender]));
+
+  if (byId[husband_id] !== 'M')
+    return 'Чоловік у шлюбі повинен мати стать M';
+  if (byId[wife_id] !== 'F')
+    return 'Дружина у шлюбі повинна мати стать F';
+
+  const conflict = await pool.query(
+    `SELECT id FROM marriages
+     WHERE (husband_id = $1 OR wife_id = $1 OR husband_id = $2 OR wife_id = $2)
+       AND ($3::int IS NULL OR id != $3)`,
+    [husband_id, wife_id, excludeId]
+  );
+  if (conflict.rows.length > 0)
+    return 'Одна з осіб вже перебуває у шлюбі';
+
+  return null;
+}
+
 // POST create marriage
 router.post('/', async (req, res) => {
   try {
     const { husband_id, wife_id, marriage_date } = req.body;
+    const err = await validateMarriage(husband_id, wife_id);
+    if (err) return res.status(400).json({ error: err });
+
     const result = await pool.query(
       'INSERT INTO marriages (husband_id, wife_id, marriage_date) VALUES ($1, $2, $3) RETURNING *',
       [husband_id, wife_id, marriage_date || null]
@@ -64,6 +91,9 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { husband_id, wife_id, marriage_date } = req.body;
+    const err = await validateMarriage(husband_id, wife_id, req.params.id);
+    if (err) return res.status(400).json({ error: err });
+
     const result = await pool.query(
       'UPDATE marriages SET husband_id=$1, wife_id=$2, marriage_date=$3 WHERE id=$4 RETURNING *',
       [husband_id, wife_id, marriage_date || null, req.params.id]
