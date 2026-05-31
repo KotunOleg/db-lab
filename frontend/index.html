@@ -102,6 +102,17 @@
     .editing { border-color: #e94560 !important; }
     .edit-mode-label { color: #e94560; font-size: 0.78rem; margin-left: 5px; }
 
+    /* Back to menu button */
+    .btn-back { background: none; border: 1px solid #2a3a5a; color: #7080a0; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.78rem; margin-bottom: 10px; display: inline-block; }
+    .btn-back:hover { border-color: #e94560; color: #e94560; }
+
+    /* Home query list */
+    .home-queries { margin-top: 24px; }
+    .home-queries h3 { color: #a0b4d0; font-size: 1rem; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #2a2a4a; }
+    .home-query-item { display: flex; align-items: baseline; gap: 14px; padding: 8px 0; border-bottom: 1px solid #1a1a2e; }
+    .home-query-item:last-child { border-bottom: none; }
+    .home-query-desc { color: #b0b8c8; font-size: 0.85rem; flex: 1; }
+
     /* SQL Log Panel */
     #sql-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #111; border-top: 1px solid #333; z-index: 200; font-family: monospace; font-size: 0.8rem; }
     #sql-panel-header { padding: 5px 12px; cursor: pointer; color: #888; user-select: none; }
@@ -139,10 +150,21 @@
       <h2>Головна панель</h2>
       <p class="welcome-text">Система управління базою даних страхової компанії. Оберіть розділ у бічному меню для роботи з даними.</p>
       <div class="home-grid" id="home-stats"></div>
+      <div class="home-queries card">
+        <h3>Запити</h3>
+        <div class="home-query-item"><span class="home-query-desc">Клієнти, у яких є поліс зі страховою сумою більше X грн</span><button class="btn btn-secondary btn-sm" onclick="goToQuery(1)">Виконати</button></div>
+        <div class="home-query-item"><span class="home-query-desc">Транспортні засоби, рік виробництва яких менше X, та кількість їхніх активних полісів</span><button class="btn btn-secondary btn-sm" onclick="goToQuery(2)">Виконати</button></div>
+        <div class="home-query-item"><span class="home-query-desc">Агенти, які уклали більше X договорів, із загальною сумою</span><button class="btn btn-secondary btn-sm" onclick="goToQuery(3)">Виконати</button></div>
+        <div class="home-query-item"><span class="home-query-desc">Активні поліси клієнтів із рівнем ризику X</span><button class="btn btn-secondary btn-sm" onclick="goToQuery(4)">Виконати</button></div>
+        <div class="home-query-item"><span class="home-query-desc">Клієнти, поліси яких покривають ризик типу X</span><button class="btn btn-secondary btn-sm" onclick="goToQuery(5)">Виконати</button></div>
+        <div class="home-query-item"><span class="home-query-desc">Клієнти з точно таким самим набором ризиків, як і обраний клієнт (реляційний поділ)</span><button class="btn btn-secondary btn-sm" onclick="goToQuery(6)">Виконати</button></div>
+        <div class="home-query-item"><span class="home-query-desc">Клієнти, полісами яких покриті ВСІ наявні типи ризиків (реляційний поділ)</span><button class="btn btn-secondary btn-sm" onclick="goToQuery(7)">Виконати</button></div>
+      </div>
     </div>
 
     <!-- PEOPLE SECTION -->
     <div id="section-people" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Люди <span id="people-edit-label" class="edit-mode-label"></span></h2>
       <div id="people-alert" class="alert"></div>
       <div class="card">
@@ -173,6 +195,7 @@
 
     <!-- AGENTS SECTION -->
     <div id="section-agents" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Агенти <span id="agents-edit-label" class="edit-mode-label"></span></h2>
       <div id="agents-alert" class="alert"></div>
       <div class="card">
@@ -199,6 +222,7 @@
 
     <!-- CLIENTS SECTION -->
     <div id="section-clients" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Клієнти <span id="clients-edit-label" class="edit-mode-label"></span></h2>
       <div id="clients-alert" class="alert"></div>
       <div class="card">
@@ -230,6 +254,7 @@
 
     <!-- RELATIVES SECTION -->
     <div id="section-relatives" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Родичі клієнтів</h2>
       <div id="relatives-alert" class="alert"></div>
       <div class="card">
@@ -261,6 +286,7 @@
 
     <!-- VEHICLES SECTION -->
     <div id="section-vehicles" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Транспортні засоби <span id="vehicles-edit-label" class="edit-mode-label"></span></h2>
       <div id="vehicles-alert" class="alert"></div>
       <div class="card">
@@ -307,6 +333,7 @@
 
     <!-- POLICIES SECTION -->
     <div id="section-policies" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Страхові поліси <span id="policies-edit-label" class="edit-mode-label"></span></h2>
       <div id="policies-alert" class="alert"></div>
       <div class="card">
@@ -345,6 +372,7 @@
 
     <!-- RISKS SECTION -->
     <div id="section-risks" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Ризики <span id="risks-edit-label" class="edit-mode-label"></span></h2>
       <div id="risks-alert" class="alert"></div>
       <div class="card">
@@ -367,6 +395,7 @@
 
     <!-- MARRIAGES SECTION -->
     <div id="section-marriages" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Шлюби <span id="marriages-edit-label" class="edit-mode-label"></span></h2>
       <div id="marriages-alert" class="alert"></div>
       <div class="card">
@@ -395,6 +424,7 @@
 
     <!-- QUERIES SECTION -->
     <div id="section-queries" class="section">
+      <button class="btn-back" onclick="showSection('home')">← Головна</button>
       <h2>Аналітичні запити</h2>
 
       <!-- Q1 -->
@@ -563,6 +593,15 @@ function formData(formId) {
 }
 
 // ===================== NAVIGATION =====================
+function goToQuery(n) {
+  showSection('queries');
+  setTimeout(() => {
+    const el = document.querySelector(`#q${n}-results`)?.closest('.query-card') ||
+               document.querySelector(`.query-card:nth-child(${n})`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
