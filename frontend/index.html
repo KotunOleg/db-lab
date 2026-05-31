@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Страхова компанія — БД</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a2e; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    #sidebar { width: 220px; min-width: 220px; background: #16213e; display: flex; flex-direction: column; border-right: 2px solid #e94560; overflow-y: auto; }
+    #sidebar h1 { color: #e94560; font-size: 1rem; padding: 20px 15px 10px; border-bottom: 1px solid #2a2a4a; line-height: 1.4; }
+    #sidebar nav { flex: 1; padding: 10px 0; }
+    .nav-item { display: block; padding: 10px 20px; color: #b0b0c0; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; font-size: 0.9rem; }
+    .nav-item:hover { background: #1a2a50; color: #e0e0ff; border-left-color: #e94560; }
+    .nav-item.active { background: #1e3a6e; color: #ffffff; border-left-color: #e94560; font-weight: 600; }
+    .nav-section { padding: 15px 20px 5px; font-size: 0.7rem; color: #607090; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Main content */
+    #content { flex: 1; overflow-y: auto; padding: 25px; background: #1a1a2e; }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    h2 { color: #e94560; font-size: 1.4rem; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #2a2a4a; }
+    h3 { color: #a0b4d0; font-size: 1rem; margin-bottom: 12px; margin-top: 20px; }
+
+    /* Cards */
+    .card { background: #16213e; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #2a2a4a; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { background: #0f3460; color: #e0e0ff; padding: 10px 12px; text-align: left; font-weight: 600; white-space: nowrap; }
+    td { padding: 9px 12px; border-bottom: 1px solid #2a2a4a; color: #c0c8d8; vertical-align: middle; }
+    tr:hover td { background: #1e2a45; }
+    .empty-row td { color: #607090; text-align: center; font-style: italic; }
+
+    /* Forms */
+    form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; align-items: end; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 0.78rem; color: #8090a8; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select, textarea { background: #0f1e38; border: 1px solid #2a3a5a; color: #e0e0e0; padding: 8px 10px; border-radius: 5px; font-size: 0.88rem; width: 100%; transition: border-color 0.2s; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #e94560; }
+    select option { background: #16213e; }
+
+    /* Buttons */
+    .btn { padding: 8px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+    .btn-primary { background: #e94560; color: white; }
+    .btn-primary:hover { background: #c73550; }
+    .btn-secondary { background: #0f3460; color: #e0e0ff; }
+    .btn-secondary:hover { background: #1a4a80; }
+    .btn-danger { background: #8b1a2e; color: #ffaaaa; padding: 5px 10px; font-size: 0.78rem; }
+    .btn-danger:hover { background: #c0243a; color: white; }
+    .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
+    .btn-info { background: #0f5a80; color: #aaddff; padding: 5px 10px; font-size: 0.78rem; }
+    .btn-info:hover { background: #1a7aaa; }
+    .btn-success { background: #1a6a3a; color: #aaffcc; padding: 5px 10px; font-size: 0.78rem; }
+    .btn-success:hover { background: #2a9a5a; }
+    .form-actions { display: flex; gap: 10px; align-items: flex-end; padding-bottom: 1px; }
+
+    /* Alerts */
+    .alert { padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; font-size: 0.88rem; display: none; }
+    .alert.show { display: block; }
+    .alert-error { background: #3a0a15; border: 1px solid #e94560; color: #ffaaaa; }
+    .alert-success { background: #0a2a15; border: 1px solid #2a9a5a; color: #aaffcc; }
+
+    /* Query section */
+    .query-card { background: #16213e; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #2a2a4a; }
+    .query-card h3 { color: #e94560; font-size: 0.95rem; margin-top: 0; }
+    .query-desc { color: #8090a8; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.5; }
+    .query-form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12px; }
+    .query-form .form-group { min-width: 200px; }
+    .query-results { margin-top: 15px; }
+    .query-results table { font-size: 0.82rem; }
+
+    /* Policy risks sub-section */
+    .policy-risks { margin-top: 8px; }
+    .risk-tag { display: inline-block; background: #0f3460; color: #aaddff; padding: 3px 8px; border-radius: 3px; font-size: 0.75rem; margin: 2px; }
+    .risk-tag .remove-risk { cursor: pointer; color: #e94560; margin-left: 5px; font-weight: bold; }
+    .risk-tag .remove-risk:hover { color: #ff6080; }
+
+    /* Loading spinner */
+    .loading { color: #607090; font-style: italic; padding: 20px; text-align: center; }
+
+    /* Home section */
+    .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+    .stat-card { background: #16213e; border-radius: 8px; padding: 20px; border: 1px solid #2a2a4a; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .stat-card:hover { border-color: #e94560; transform: translateY(-2px); }
+    .stat-card .stat-num { font-size: 2rem; font-weight: 700; color: #e94560; }
+    .stat-card .stat-label { color: #8090a8; font-size: 0.85rem; margin-top: 5px; }
+    .welcome-text { color: #8090a8; line-height: 1.7; }
+
+    /* Multi-select for risks */
+    select[multiple] { min-height: 100px; }
+
+    /* Inline add risk to policy */
+    .add-risk-inline { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .add-risk-inline select { flex: 1; }
+
+    /* Edit mode highlight */
+    .editing { border-color: #e94560 !important; }
+    .edit-mode-label { color: #e94560; font-size: 0.78rem; margin-left: 5px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <h1>Страхова<br>компанія БД</h1>
+    <nav>
+      <div class="nav-section">Загальне</div>
+      <div class="nav-item active" onclick="showSection('home')">Головна</div>
+      <div class="nav-section">Сутності</div>
+      <div class="nav-item" onclick="showSection('people')">Люди</div>
+      <div class="nav-item" onclick="showSection('agents')">Агенти</div>
+      <div class="nav-item" onclick="showSection('clients')">Клієнти</div>
+      <div class="nav-item" onclick="showSection('relatives')">Родичі</div>
+      <div class="nav-item" onclick="showSection('vehicles')">Транспортні засоби</div>
+      <div class="nav-item" onclick="showSection('policies')">Поліси</div>
+      <div class="nav-item" onclick="showSection('risks')">Ризики</div>
+      <div class="nav-item" onclick="showSection('marriages')">Шлюби</div>
+      <div class="nav-section">Аналітика</div>
+      <div class="nav-item" onclick="showSection('queries')">Запити</div>
+    </nav>
+  </aside>
+
+  <main id="content">
+
+    <!-- HOME SECTION -->
+    <div id="section-home" class="section active">
+      <h2>Головна панель</h2>
+      <p class="welcome-text">Система управління базою даних страхової компанії. Оберіть розділ у бічному меню для роботи з даними.</p>
+      <div class="home-grid" id="home-stats"></div>
+    </div>
+
+    <!-- PEOPLE SECTION -->
+    <div id="section-people" class="section">
+      <h2>Люди <span id="people-edit-label" class="edit-mode-label"></span></h2>
+      <div id="people-alert" class="alert"></div>
+      <div class="card">
+        <h3 id="people-form-title">Додати особу</h3>
+        <form id="people-form" onsubmit="submitPeopleForm(event)">
+          <div class="form-group"><label>ІПН</label><input name="inn_code" placeholder="1234567890" required></div>
+          <div class="form-group"><label>Повне ім'я</label><input name="full_name" placeholder="Прізвище Ім'я По-батькові" required></div>
+          <div class="form-group"><label>Дата народження</label><input name="birth_date" type="date"></div>
+          <div class="form-group"><label>Стать</label>
+            <select name="gender"><option value="">-- Не вказано --</option><option value="M">М (Чоловік)</option><option value="F">Ж (Жінка)</option></select>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelPeopleEdit()">Скасувати</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+          <input id="people-search" placeholder="Пошук за ім'ям або ІПН..." style="max-width:300px;" oninput="loadPeople()">
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>ID</th><th>ІПН</th><th>Повне ім'я</th><th>Дата нар.</th><th>Стать</th><th>Дії</th></tr></thead>
+          <tbody id="people-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENTS SECTION -->
+    <div id="section-agents" class="section">
+      <h2>Агенти <span id="agents-edit-label" class="edit-mode-label"></span></h2>
+      <div id="agents-alert" class="alert"></div>
+      <div class="card">
+        <h3 id="agents-form-title">Додати агента</h3>
+        <form id="agents-form" onsubmit="submitAgentsForm(event)">
+          <div class="form-group"><label>Особа (людина)</label>
+            <select name="person_id" id="agent-person-select" required><option value="">-- Оберіть особу --</option></select>
+          </div>
+          <div class="form-group"><label>Номер ліцензії</label><input name="license_number" placeholder="LIC-2024-001" required></div>
+          <div class="form-group"><label>Дата початку</label><input name="start_date" type="date"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelAgentsEdit()">Скасувати</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table><thead><tr><th>ID</th><th>Повне ім'я</th><th>ІПН</th><th>Ліцензія</th><th>Дата початку</th><th>Дії</th></tr></thead>
+          <tbody id="agents-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTS SECTION -->
+    <div id="section-clients" class="section">
+      <h2>Клієнти <span id="clients-edit-label" class="edit-mode-label"></span></h2>
+      <div id="clients-alert" class="alert"></div>
+      <div class="card">
+        <h3 id="clients-form-title">Додати клієнта</h3>
+        <form id="clients-form" onsubmit="submitClientsForm(event)">
+          <div class="form-group"><label>Особа (людина)</label>
+            <select name="person_id" id="client-person-select" required><option value="">-- Оберіть особу --</option></select>
+          </div>
+          <div class="form-group"><label>Рівень ризику</label>
+            <select name="risk_level" required>
+              <option value="Low">Низький (Low)</option>
+              <option value="Medium">Середній (Medium)</option>
+              <option value="High">Високий (High)</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelClientsEdit()">Скасувати</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table><thead><tr><th>ID</th><th>Повне ім'я</th><th>ІПН</th><th>Дата нар.</th><th>Стать</th><th>Рівень ризику</th><th>Дії</th></tr></thead>
+          <tbody id="clients-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RELATIVES SECTION -->
+    <div id="section-relatives" class="section">
+      <h2>Родичі клієнтів</h2>
+      <div id="relatives-alert" class="alert"></div>
+      <div class="card">
+        <h3>Додати родича</h3>
+        <form id="relatives-form" onsubmit="submitRelativesForm(event)">
+          <div class="form-group"><label>Клієнт</label>
+            <select name="client_id" id="relative-client-select" required><option value="">-- Оберіть клієнта --</option></select>
+          </div>
+          <div class="form-group"><label>Повне ім'я родича</label><input name="full_name" placeholder="Прізвище Ім'я По-батькові" required></div>
+          <div class="form-group"><label>Тип зв'язку</label><input name="relationship_type" placeholder="Батько, Мати, Брат..." required></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Додати</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;">
+          <label style="color:#8090a8;font-size:0.85rem;">Фільтр за клієнтом:</label>
+          <select id="relatives-filter" onchange="loadRelatives()" style="max-width:280px;">
+            <option value="">-- Всі клієнти --</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Клієнт</th><th>Повне ім'я родича</th><th>Тип зв'язку</th><th>Дії</th></tr></thead>
+          <tbody id="relatives-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VEHICLES SECTION -->
+    <div id="section-vehicles" class="section">
+      <h2>Транспортні засоби <span id="vehicles-edit-label" class="edit-mode-label"></span></h2>
+      <div id="vehicles-alert" class="alert"></div>
+      <div class="card">
+        <h3 id="vehicles-form-title">Додати транспортний засіб</h3>
+        <form id="vehicles-form" onsubmit="submitVehiclesForm(event)">
+          <div class="form-group"><label>VIN-код</label><input name="vin_code" placeholder="VIN12345678901234" maxlength="17" required></div>
+          <div class="form-group"><label>Держ. номер</label><input name="plate_number" placeholder="AA1234BB"></div>
+          <div class="form-group"><label>Рік виробництва</label><input name="manufacture_year" type="number" min="1900" max="2030" placeholder="2020"></div>
+          <div class="form-group"><label>Тип</label>
+            <select name="car_type">
+              <option value="Sedan">Sedan</option>
+              <option value="SUV">SUV</option>
+              <option value="Hatchback">Hatchback</option>
+              <option value="Truck">Truck</option>
+              <option value="Van">Van</option>
+              <option value="Other">Інше</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelVehiclesEdit()">Скасувати</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <h3>Прив'язати ТЗ до клієнта</h3>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="form-group"><label>Клієнт</label>
+            <select id="assign-client-select" style="min-width:220px;"><option value="">-- Клієнт --</option></select>
+          </div>
+          <div class="form-group"><label>Транспортний засіб (VIN)</label>
+            <select id="assign-vehicle-select" style="min-width:220px;"><option value="">-- VIN --</option></select>
+          </div>
+          <button class="btn btn-secondary" onclick="assignVehicle()">Прив'язати</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table><thead><tr><th>VIN</th><th>Держ. номер</th><th>Рік</th><th>Тип</th><th>Власники</th><th>Дії</th></tr></thead>
+          <tbody id="vehicles-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- POLICIES SECTION -->
+    <div id="section-policies" class="section">
+      <h2>Страхові поліси <span id="policies-edit-label" class="edit-mode-label"></span></h2>
+      <div id="policies-alert" class="alert"></div>
+      <div class="card">
+        <h3 id="policies-form-title">Додати поліс</h3>
+        <form id="policies-form" onsubmit="submitPoliciesForm(event)">
+          <div class="form-group"><label>Код полісу</label><input name="policy_code" placeholder="POL-2024-001" required></div>
+          <div class="form-group"><label>Страхова сума (грн)</label><input name="insurance_sum" type="number" step="0.01" min="0" placeholder="500000" required></div>
+          <div class="form-group"><label>Дата видачі</label><input name="issue_date" type="date" required></div>
+          <div class="form-group"><label>Дата закінчення</label><input name="expiry_date" type="date" required></div>
+          <div class="form-group"><label>Агент</label>
+            <select name="agent_id" id="policy-agent-select">
+              <option value="">-- Онлайн (без агента) --</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Клієнт</label>
+            <select name="client_id" id="policy-client-select" required><option value="">-- Оберіть клієнта --</option></select>
+          </div>
+          <div class="form-group"><label>Транспортний засіб (VIN)</label>
+            <select name="vehicle_vin" id="policy-vehicle-select" required><option value="">-- Оберіть ТЗ --</option></select>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelPoliciesEdit()">Скасувати</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Код</th><th>Клієнт</th><th>Агент</th><th>ТЗ</th><th>Сума</th><th>Видача</th><th>Закінчення</th><th>Ризики</th><th>Дії</th></tr></thead>
+            <tbody id="policies-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RISKS SECTION -->
+    <div id="section-risks" class="section">
+      <h2>Ризики <span id="risks-edit-label" class="edit-mode-label"></span></h2>
+      <div id="risks-alert" class="alert"></div>
+      <div class="card">
+        <h3 id="risks-form-title">Додати тип ризику</h3>
+        <form id="risks-form" onsubmit="submitRisksForm(event)">
+          <div class="form-group"><label>Тип ризику</label><input name="risk_type" placeholder="Наприклад: ДТП, Пожежа..." required></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelRisksEdit()">Скасувати</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table><thead><tr><th>ID</th><th>Тип ризику</th><th>Дії</th></tr></thead>
+          <tbody id="risks-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARRIAGES SECTION -->
+    <div id="section-marriages" class="section">
+      <h2>Шлюби <span id="marriages-edit-label" class="edit-mode-label"></span></h2>
+      <div id="marriages-alert" class="alert"></div>
+      <div class="card">
+        <h3 id="marriages-form-title">Зареєструвати шлюб</h3>
+        <form id="marriages-form" onsubmit="submitMarriagesForm(event)">
+          <div class="form-group"><label>Чоловік (клієнт)</label>
+            <select name="husband_id" id="marriage-husband-select" required><option value="">-- Оберіть --</option></select>
+          </div>
+          <div class="form-group"><label>Дружина (клієнт)</label>
+            <select name="wife_id" id="marriage-wife-select" required><option value="">-- Оберіть --</option></select>
+          </div>
+          <div class="form-group"><label>Дата шлюбу</label><input name="marriage_date" type="date"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelMarriagesEdit()">Скасувати</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table><thead><tr><th>ID</th><th>Чоловік</th><th>Дружина</th><th>Дата шлюбу</th><th>Дії</th></tr></thead>
+          <tbody id="marriages-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUERIES SECTION -->
+    <div id="section-queries" class="section">
+      <h2>Аналітичні запити</h2>
+
+      <!-- Q1 -->
+      <div class="query-card">
+        <h3>Запит 1 — Клієнти з великою страховою сумою</h3>
+        <p class="query-desc">Клієнти, у яких є поліс зі страховою сумою більше X гривень. Показує клієнта, рівень ризику, код полісу та суму.</p>
+        <div class="query-form">
+          <div class="form-group"><label>Мінімальна сума (грн)</label><input id="q1-min_sum" type="number" placeholder="300000" value="300000"></div>
+          <button class="btn btn-primary" onclick="runQuery(1)">Виконати</button>
+        </div>
+        <div id="q1-results" class="query-results"></div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="query-card">
+        <h3>Запит 2 — Старі транспортні засоби та кількість активних полісів</h3>
+        <p class="query-desc">Транспортні засоби, рік виробництва яких менше X, разом із кількістю активних (чинних) страхових полісів на кожен ТЗ.</p>
+        <div class="query-form">
+          <div class="form-group"><label>Максимальний рік виробництва</label><input id="q2-max_year" type="number" placeholder="2020" value="2020"></div>
+          <button class="btn btn-primary" onclick="runQuery(2)">Виконати</button>
+        </div>
+        <div id="q2-results" class="query-results"></div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="query-card">
+        <h3>Запит 3 — Активні агенти з кількістю договорів</h3>
+        <p class="query-desc">Агенти, які уклали більше X договорів, із загальною страховою сумою за всіма їхніми полісами.</p>
+        <div class="query-form">
+          <div class="form-group"><label>Мінімальна кількість полісів</label><input id="q3-min_count" type="number" placeholder="0" value="0"></div>
+          <button class="btn btn-primary" onclick="runQuery(3)">Виконати</button>
+        </div>
+        <div id="q3-results" class="query-results"></div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="query-card">
+        <h3>Запит 4 — Активні поліси за рівнем ризику клієнта</h3>
+        <p class="query-desc">Активні (чинні на сьогодні) поліси клієнтів із заданим рівнем ризику. Показує клієнта, поліс, транспортний засіб та суму.</p>
+        <div class="query-form">
+          <div class="form-group"><label>Рівень ризику</label>
+            <select id="q4-risk_level">
+              <option value="Low">Низький (Low)</option>
+              <option value="Medium">Середній (Medium)</option>
+              <option value="High">Високий (High)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="runQuery(4)">Виконати</button>
+        </div>
+        <div id="q4-results" class="query-results"></div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="query-card">
+        <h3>Запит 5 — Клієнти, чиї поліси покривають певний ризик</h3>
+        <p class="query-desc">Знаходить усіх клієнтів, у полісах яких присутній заданий тип ризику. Показує клієнта, поліс та страхову суму.</p>
+        <div class="query-form">
+          <div class="form-group"><label>Тип ризику</label>
+            <select id="q5-risk_type"><option value="">-- Завантаження... --</option></select>
+          </div>
+          <button class="btn btn-primary" onclick="runQuery(5)">Виконати</button>
+        </div>
+        <div id="q5-results" class="query-results"></div>
+      </div>
+
+      <!-- Q6 -->
+      <div class="query-card">
+        <h3>Запит 6 — Клієнти з однаковим набором ризиків (реляційний поділ)</h3>
+        <p class="query-desc">Знаходить клієнтів, які мають точно такий самий набір типів ризиків у своїх полісах, як і обраний клієнт. Використовує метод реляційного поділу (подвійне заперечення через EXCEPT).</p>
+        <div class="query-form">
+          <div class="form-group"><label>Клієнт для порівняння</label>
+            <select id="q6-client_id"><option value="">-- Оберіть клієнта --</option></select>
+          </div>
+          <button class="btn btn-primary" onclick="runQuery(6)">Виконати</button>
+        </div>
+        <div id="q6-results" class="query-results"></div>
+      </div>
+
+      <!-- Q7 -->
+      <div class="query-card">
+        <h3>Запит 7 — Клієнти, що покривають ВСІ ризики (реляційний поділ)</h3>
+        <p class="query-desc">Знаходить клієнтів, полісами яких у сукупності покриті абсолютно всі наявні типи ризиків у системі. Класичний реляційний поділ через NOT EXISTS / EXCEPT.</p>
+        <div class="query-form">
+          <button class="btn btn-primary" onclick="runQuery(7)">Виконати</button>
+        </div>
+        <div id="q7-results" class="query-results"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:3000/api';
+
+// ===================== UTILITY =====================
+function fmt(v) { return v === null || v === undefined ? '—' : v; }
+function fmtDate(d) { return d ? d.split('T')[0] : '—'; }
+function fmtNum(n) { return n !== null && n !== undefined ? Number(n).toLocaleString('uk-UA') : '—'; }
+
+function showAlert(section, msg, type = 'error') {
+  const el = document.getElementById(`${section}-alert`);
+  if (!el) return;
+  el.className = `alert alert-${type} show`;
+  el.textContent = msg;
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+function renderTable(tbodyId, rows, cols, actions) {
+  const tbody = document.getElementById(tbodyId);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols.length + 1}">Записів не знайдено</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      ${cols.map(c => `<td>${c(r)}</td>`).join('')}
+      <td>${actions(r)}</td>
+    </tr>
+  `).join('');
+}
+
+async function apiFetch(url, options = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+function formData(formId) {
+  const form = document.getElementById(formId);
+  const fd = new FormData(form);
+  const obj = {};
+  for (const [k, v] of fd.entries()) obj[k] = v;
+  return obj;
+}
+
+// ===================== NAVIGATION =====================
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') === `showSection('${name}')`) n.classList.add('active');
+  });
+  const loaders = {
+    home: loadHome, people: loadPeople, agents: loadAgents,
+    clients: loadClients, relatives: loadRelatives, vehicles: loadVehicles,
+    policies: loadPolicies, risks: loadRisks, marriages: loadMarriages,
+    queries: loadQueriesSection
+  };
+  if (loaders[name]) loaders[name]();
+}
+
+// ===================== HOME =====================
+async function loadHome() {
+  const stats = [
+    { key: 'people', label: 'Людей', section: 'people' },
+    { key: 'agents', label: 'Агентів', section: 'agents' },
+    { key: 'clients', label: 'Клієнтів', section: 'clients' },
+    { key: 'vehicles', label: 'ТЗ', section: 'vehicles' },
+    { key: 'policies', label: 'Полісів', section: 'policies' },
+    { key: 'risks', label: 'Типів ризиків', section: 'risks' },
+    { key: 'marriages', label: 'Шлюбів', section: 'marriages' }
+  ];
+  const grid = document.getElementById('home-stats');
+  grid.innerHTML = stats.map(s => `<div class="stat-card" onclick="showSection('${s.section}')"><div class="stat-num" id="stat-${s.key}">...</div><div class="stat-label">${s.label}</div></div>`).join('');
+  for (const s of stats) {
+    try {
+      const data = await apiFetch(`${API_BASE}/${s.key}`);
+      document.getElementById(`stat-${s.key}`).textContent = data.length;
+    } catch { document.getElementById(`stat-${s.key}`).textContent = '?'; }
+  }
+}
+
+// ===================== PEOPLE =====================
+let editingPerson = null;
+
+async function loadPeople() {
+  const search = document.getElementById('people-search')?.value || '';
+  try {
+    const url = search ? `${API_BASE}/people?search=${encodeURIComponent(search)}` : `${API_BASE}/people`;
+    const data = await apiFetch(url);
+    renderTable('people-tbody', data,
+      [r => r.id, r => fmt(r.inn_code), r => fmt(r.full_name), r => fmtDate(r.birth_date), r => r.gender === 'M' ? 'Чоловік' : r.gender === 'F' ? 'Жінка' : '—'],
+      r => `<button class="btn btn-info btn-sm" onclick='editPerson(${JSON.stringify(r)})'>Редагувати</button>
+             <button class="btn btn-danger btn-sm" onclick="deletePerson(${r.id})">Видалити</button>`
+    );
+  } catch (e) { showAlert('people', e.message); }
+}
+
+function editPerson(r) {
+  editingPerson = r.id;
+  const form = document.getElementById('people-form');
+  form.inn_code.value = r.inn_code || '';
+  form.full_name.value = r.full_name || '';
+  form.birth_date.value = fmtDate(r.birth_date);
+  form.gender.value = r.gender || '';
+  document.getElementById('people-form-title').textContent = 'Редагувати особу';
+  document.getElementById('people-edit-label').textContent = `(редагування ID ${r.id})`;
+  form.classList.add('editing');
+}
+
+function cancelPeopleEdit() {
+  editingPerson = null;
+  document.getElementById('people-form').reset();
+  document.getElementById('people-form-title').textContent = 'Додати особу';
+  document.getElementById('people-edit-label').textContent = '';
+  document.getElementById('people-form').classList.remove('editing');
+}
+
+async function submitPeopleForm(e) {
+  e.preventDefault();
+  const d = formData('people-form');
+  try {
+    if (editingPerson) {
+      await apiFetch(`${API_BASE}/people/${editingPerson}`, { method: 'PUT', body: JSON.stringify(d) });
+      showAlert('people', 'Запис оновлено успішно', 'success');
+    } else {
+      await apiFetch(`${API_BASE}/people`, { method: 'POST', body: JSON.stringify(d) });
+      showAlert('people', 'Запис додано успішно', 'success');
+    }
+    cancelPeopleEdit();
+    loadPeople();
+  } catch (e) { showAlert('people', e.message); }
+}
+
+async function deletePerson(id) {
+  if (!confirm(`Видалити особу ID ${id}? Це також видалить пов'язані записи агента/клієнта.`)) return;
+  try {
+    await apiFetch(`${API_BASE}/people/${id}`, { method: 'DELETE' });
+    showAlert('people', 'Видалено успішно', 'success');
+    loadPeople();
+  } catch (e) { showAlert('people', e.message); }
+}
+
+// ===================== AGENTS =====================
+let editingAgent = null;
+
+async function loadAgents() {
+  try {
+    const [agents, people] = await Promise.all([apiFetch(`${API_BASE}/agents`), apiFetch(`${API_BASE}/people`)]);
+    // Populate person dropdown (exclude already agents)
+    const agentIds = new Set(agents.map(a => a.person_id));
+    const sel = document.getElementById('agent-person-select');
+    const curVal = sel.value;
+    sel.innerHTML = '<option value="">-- Оберіть особу --</option>' +
+      people.filter(p => !agentIds.has(p.id) || (editingAgent && p.id == editingAgent))
+            .map(p => `<option value="${p.id}">${p.full_name} (${p.inn_code})</option>`).join('');
+    if (curVal) sel.value = curVal;
+
+    renderTable('agents-tbody', agents,
+      [r => r.person_id, r => fmt(r.full_name), r => fmt(r.inn_code), r => fmt(r.license_number), r => fmtDate(r.start_date)],
+      r => `<button class="btn btn-info btn-sm" onclick='editAgent(${JSON.stringify(r)})'>Редагувати</button>
+             <button class="btn btn-danger btn-sm" onclick="deleteAgent(${r.person_id})">Видалити</button>`
+    );
+  } catch (e) { showAlert('agents', e.message); }
+}
+
+function editAgent(r) {
+  editingAgent = r.person_id;
+  const form = document.getElementById('agents-form');
+  document.getElementById('agent-person-select').value = r.person_id;
+  document.getElementById('agent-person-select').disabled = true;
+  form.license_number.value = r.license_number || '';
+  form.start_date.value = fmtDate(r.start_date);
+  document.getElementById('agents-form-title').textContent = 'Редагувати агента';
+  document.getElementById('agents-edit-label').textContent = `(редагування ID ${r.person_id})`;
+}
+
+function cancelAgentsEdit() {
+  editingAgent = null;
+  document.getElementById('agents-form').reset();
+  document.getElementById('agent-person-select').disabled = false;
+  document.getElementById('agents-form-title').textContent = 'Додати агента';
+  document.getElementById('agents-edit-label').textContent = '';
+}
+
+async function submitAgentsForm(e) {
+  e.preventDefault();
+  const d = formData('agents-form');
+  try {
+    if (editingAgent) {
+      await apiFetch(`${API_BASE}/agents/${editingAgent}`, { method: 'PUT', body: JSON.stringify(d) });
+      showAlert('agents', 'Запис оновлено успішно', 'success');
+    } else {
+      await apiFetch(`${API_BASE}/agents`, { method: 'POST', body: JSON.stringify(d) });
+      showAlert('agents', 'Агента додано успішно', 'success');
+    }
+    cancelAgentsEdit();
+    loadAgents();
+  } catch (e) { showAlert('agents', e.message); }
+}
+
+async function deleteAgent(id) {
+  if (!confirm(`Видалити агента ID ${id}?`)) return;
+  try {
+    await apiFetch(`${API_BASE}/agents/${id}`, { method: 'DELETE' });
+    showAlert('agents', 'Видалено успішно', 'success');
+    loadAgents();
+  } catch (e) { showAlert('agents', e.message); }
+}
+
+// ===================== CLIENTS =====================
+let editingClient = null;
+
+async function loadClients() {
+  try {
+    const [clients, people] = await Promise.all([apiFetch(`${API_BASE}/clients`), apiFetch(`${API_BASE}/people`)]);
+    const clientIds = new Set(clients.map(c => c.person_id));
+    const sel = document.getElementById('client-person-select');
+    const curVal = sel.value;
+    sel.innerHTML = '<option value="">-- Оберіть особу --</option>' +
+      people.filter(p => !clientIds.has(p.id) || (editingClient && p.id == editingClient))
+            .map(p => `<option value="${p.id}">${p.full_name} (${p.inn_code})</option>`).join('');
+    if (curVal) sel.value = curVal;
+
+    renderTable('clients-tbody', clients,
+      [r => r.person_id, r => fmt(r.full_name), r => fmt(r.inn_code), r => fmtDate(r.birth_date),
+       r => r.gender === 'M' ? 'Чоловік' : r.gender === 'F' ? 'Жінка' : '—', r => fmt(r.risk_level)],
+      r => `<button class="btn btn-info btn-sm" onclick='editClient(${JSON.stringify(r)})'>Редагувати</button>
+             <button class="btn btn-danger btn-sm" onclick="deleteClient(${r.person_id})">Видалити</button>`
+    );
+  } catch (e) { showAlert('clients', e.message); }
+}
+
+function editClient(r) {
+  editingClient = r.person_id;
+  const form = document.getElementById('clients-form');
+  document.getElementById('client-person-select').value = r.person_id;
+  document.getElementById('client-person-select').disabled = true;
+  form.risk_level.value = r.risk_level || 'Low';
+  document.getElementById('clients-form-title').textContent = 'Редагувати клієнта';
+  document.getElementById('clients-edit-label').textContent = `(редагування ID ${r.person_id})`;
+}
+
+function cancelClientsEdit() {
+  editingClient = null;
+  document.getElementById('clients-form').reset();
+  document.getElementById('client-person-select').disabled = false;
+  document.getElementById('clients-form-title').textContent = 'Додати клієнта';
+  document.getElementById('clients-edit-label').textContent = '';
+}
+
+async function submitClientsForm(e) {
+  e.preventDefault();
+  const d = formData('clients-form');
+  try {
+    if (editingClient) {
+      await apiFetch(`${API_BASE}/clients/${editingClient}`, { method: 'PUT', body: JSON.stringify(d) });
+      showAlert('clients', 'Запис оновлено успішно', 'success');
+    } else {
+      await apiFetch(`${API_BASE}/clients`, { method: 'POST', body: JSON.stringify(d) });
+      showAlert('clients', 'Клієнта додано успішно', 'success');
+    }
+    cancelClientsEdit();
+    loadClients();
+  } catch (e) { showAlert('clients', e.message); }
+}
+
+async function deleteClient(id) {
+  if (!confirm(`Видалити клієнта ID ${id}? Це видалить пов'язані поліси, родичів, шлюби.`)) return;
+  try {
+    await apiFetch(`${API_BASE}/clients/${id}`, { method: 'DELETE' });
+    showAlert('clients', 'Видалено успішно', 'success');
+    loadClients();
+  } catch (e) { showAlert('clients', e.message); }
+}
+
+// ===================== RELATIVES =====================
+async function loadRelatives() {
+  try {
+    const clients = await apiFetch(`${API_BASE}/clients`);
+    // Populate filter dropdown
+    const filterSel = document.getElementById('relatives-filter');
+    const filterVal = filterSel.value;
+    filterSel.innerHTML = '<option value="">-- Всі клієнти --</option>' +
+      clients.map(c => `<option value="${c.person_id}">${c.full_name}</option>`).join('');
+    filterSel.value = filterVal;
+
+    // Populate form dropdown
+    const formSel = document.getElementById('relative-client-select');
+    const formVal = formSel.value;
+    formSel.innerHTML = '<option value="">-- Оберіть клієнта --</option>' +
+      clients.map(c => `<option value="${c.person_id}">${c.full_name}</option>`).join('');
+    if (formVal) formSel.value = formVal;
+
+    const url = filterVal ? `${API_BASE}/relatives?client_id=${filterVal}` : `${API_BASE}/relatives`;
+    const data = await apiFetch(url);
+    renderTable('relatives-tbody', data,
+      [r => fmt(r.client_name), r => fmt(r.full_name), r => fmt(r.relationship_type)],
+      r => `<button class="btn btn-danger btn-sm" onclick="deleteRelative(${r.client_id}, '${r.full_name.replace(/'/g, "\\'")}')">Видалити</button>`
+    );
+  } catch (e) { showAlert('relatives', e.message); }
+}
+
+async function submitRelativesForm(e) {
+  e.preventDefault();
+  const d = formData('relatives-form');
+  try {
+    await apiFetch(`${API_BASE}/relatives`, { method: 'POST', body: JSON.stringify(d) });
+    showAlert('relatives', 'Родича додано успішно', 'success');
+    document.getElementById('relatives-form').reset();
+    loadRelatives();
+  } catch (e) { showAlert('relatives', e.message); }
+}
+
+async function deleteRelative(clientId, fullName) {
+  if (!confirm(`Видалити родича "${fullName}"?`)) return;
+  try {
+    await apiFetch(`${API_BASE}/relatives/${clientId}/${encodeURIComponent(fullName)}`, { method: 'DELETE' });
+    showAlert('relatives', 'Видалено успішно', 'success');
+    loadRelatives();
+  } catch (e) { showAlert('relatives', e.message); }
+}
+
+// ===================== VEHICLES =====================
+let editingVehicle = null;
+
+async function loadVehicles() {
+  try {
+    const [vehicles, clients] = await Promise.all([apiFetch(`${API_BASE}/vehicles`), apiFetch(`${API_BASE}/clients`)]);
+
+    // Populate assign dropdowns
+    const aSel = document.getElementById('assign-client-select');
+    aSel.innerHTML = '<option value="">-- Клієнт --</option>' +
+      clients.map(c => `<option value="${c.person_id}">${c.full_name}</option>`).join('');
+    const vSel = document.getElementById('assign-vehicle-select');
+    vSel.innerHTML = '<option value="">-- VIN --</option>' +
+      vehicles.map(v => `<option value="${v.vin_code}">${v.plate_number} (${v.vin_code})</option>`).join('');
+
+    // For each vehicle, load owners asynchronously
+    const ownerMap = {};
+    await Promise.all(vehicles.map(async v => {
+      try {
+        const owners = await apiFetch(`${API_BASE}/vehicles/${v.vin_code}/clients`);
+        ownerMap[v.vin_code] = owners;
+      } catch { ownerMap[v.vin_code] = []; }
+    }));
+
+    const tbody = document.getElementById('vehicles-tbody');
+    if (!vehicles.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Записів не знайдено</td></tr>';
+      return;
+    }
+    tbody.innerHTML = vehicles.map(v => {
+      const owners = ownerMap[v.vin_code] || [];
+      const ownerHtml = owners.length
+        ? owners.map(o => `<span class="risk-tag">${o.full_name} <span class="remove-risk" onclick="unassignVehicle(${o.person_id},'${v.vin_code}')" title="Відкріпити">×</span></span>`).join('')
+        : '<span style="color:#607090">—</span>';
+      return `<tr>
+        <td style="font-size:0.75rem;color:#8090a8">${v.vin_code}</td>
+        <td>${fmt(v.plate_number)}</td>
+        <td>${fmt(v.manufacture_year)}</td>
+        <td>${fmt(v.car_type)}</td>
+        <td>${ownerHtml}</td>
+        <td>
+          <button class="btn btn-info btn-sm" onclick='editVehicle(${JSON.stringify(v)})'>Редагувати</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.vin_code}')">Видалити</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) { showAlert('vehicles', e.message); }
+}
+
+function editVehicle(r) {
+  editingVehicle = r.vin_code;
+  const form = document.getElementById('vehicles-form');
+  form.vin_code.value = r.vin_code;
+  form.vin_code.readOnly = true;
+  form.plate_number.value = r.plate_number || '';
+  form.manufacture_year.value = r.manufacture_year || '';
+  form.car_type.value = r.car_type || 'Sedan';
+  document.getElementById('vehicles-form-title').textContent = 'Редагувати ТЗ';
+  document.getElementById('vehicles-edit-label').textContent = `(редагування ${r.vin_code})`;
+}
+
+function cancelVehiclesEdit() {
+  editingVehicle = null;
+  document.getElementById('vehicles-form').reset();
+  document.getElementById('vehicles-form').vin_code.readOnly = false;
+  document.getElementById('vehicles-form-title').textContent = 'Додати транспортний засіб';
+  document.getElementById('vehicles-edit-label').textContent = '';
+}
+
+async function submitVehiclesForm(e) {
+  e.preventDefault();
+  const d = formData('vehicles-form');
+  try {
+    if (editingVehicle) {
+      await apiFetch(`${API_BASE}/vehicles/${editingVehicle}`, { method: 'PUT', body: JSON.stringify(d) });
+      showAlert('vehicles', 'Оновлено успішно', 'success');
+    } else {
+      await apiFetch(`${API_BASE}/vehicles`, { method: 'POST', body: JSON.stringify(d) });
+      showAlert('vehicles', 'ТЗ додано успішно', 'success');
+    }
+    cancelVehiclesEdit();
+    loadVehicles();
+  } catch (e) { showAlert('vehicles', e.message); }
+}
+
+async function deleteVehicle(vin) {
+  if (!confirm(`Видалити ТЗ ${vin}?`)) return;
+  try {
+    await apiFetch(`${API_BASE}/vehicles/${vin}`, { method: 'DELETE' });
+    showAlert('vehicles', 'Видалено успішно', 'success');
+    loadVehicles();
+  } catch (e) { showAlert('vehicles', e.message); }
+}
+
+async function assignVehicle() {
+  const clientId = document.getElementById('assign-client-select').value;
+  const vehicleVin = document.getElementById('assign-vehicle-select').value;
+  if (!clientId || !vehicleVin) { showAlert('vehicles', 'Оберіть клієнта та ТЗ'); return; }
+  try {
+    await apiFetch(`${API_BASE}/vehicles/assign`, { method: 'POST', body: JSON.stringify({ client_id: clientId, vehicle_vin: vehicleVin }) });
+    showAlert('vehicles', 'ТЗ прив\'язано до клієнта', 'success');
+    loadVehicles();
+  } catch (e) { showAlert('vehicles', e.message); }
+}
+
+async function unassignVehicle(clientId, vin) {
+  if (!confirm(`Відкріпити ТЗ від клієнта?`)) return;
+  try {
+    await apiFetch(`${API_BASE}/vehicles/assign/${clientId}/${vin}`, { method: 'DELETE' });
+    showAlert('vehicles', 'Відкріплено успішно', 'success');
+    loadVehicles();
+  } catch (e) { showAlert('vehicles', e.message); }
+}
+
+// ===================== POLICIES =====================
+let editingPolicy = null;
+
+async function loadPolicies() {
+  try {
+    const [policies, clients, agents, vehicles] = await Promise.all([
+      apiFetch(`${API_BASE}/policies`),
+      apiFetch(`${API_BASE}/clients`),
+      apiFetch(`${API_BASE}/agents`),
+      apiFetch(`${API_BASE}/vehicles`)
+    ]);
+
+    // Populate dropdowns
+    document.getElementById('policy-client-select').innerHTML =
+      '<option value="">-- Оберіть клієнта --</option>' +
+      clients.map(c => `<option value="${c.person_id}">${c.full_name}</option>`).join('');
+
+    document.getElementById('policy-agent-select').innerHTML =
+      '<option value="">-- Онлайн (без агента) --</option>' +
+      agents.map(a => `<option value="${a.person_id}">${a.full_name} (${a.license_number})</option>`).join('');
+
+    document.getElementById('policy-vehicle-select').innerHTML =
+      '<option value="">-- Оберіть ТЗ --</option>' +
+      vehicles.map(v => `<option value="${v.vin_code}">${v.plate_number} — ${v.vin_code}</option>`).join('');
+
+    // For each policy load risks
+    const riskMap = {};
+    await Promise.all(policies.map(async p => {
+      try {
+        riskMap[p.policy_code] = await apiFetch(`${API_BASE}/policies/${p.policy_code}/risks`);
+      } catch { riskMap[p.policy_code] = []; }
+    }));
+
+    const allRisks = await apiFetch(`${API_BASE}/risks`);
+
+    const tbody = document.getElementById('policies-tbody');
+    if (!policies.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Записів не знайдено</td></tr>';
+      return;
+    }
+    tbody.innerHTML = policies.map(p => {
+      const policyRisks = riskMap[p.policy_code] || [];
+      const policyRiskIds = new Set(policyRisks.map(r => r.id));
+      const risksHtml = policyRisks.map(r =>
+        `<span class="risk-tag">${r.risk_type} <span class="remove-risk" onclick="removePolicyRisk('${p.policy_code}',${r.id})" title="Видалити ризик">×</span></span>`
+      ).join('') || '<span style="color:#607090">—</span>';
+      const addRiskOptions = allRisks.filter(r => !policyRiskIds.has(r.id))
+        .map(r => `<option value="${r.id}">${r.risk_type}</option>`).join('');
+      const addRiskHtml = addRiskOptions
+        ? `<div class="add-risk-inline"><select id="add-risk-${p.policy_code}" style="font-size:0.78rem;padding:3px 6px;">
+             <option value="">+ Додати ризик</option>${addRiskOptions}</select>
+             <button class="btn btn-success" style="padding:3px 8px;font-size:0.75rem;" onclick="addPolicyRisk('${p.policy_code}')">+</button></div>`
+        : '';
+      return `<tr>
+        <td style="font-size:0.8rem;font-weight:600;color:#e0e0ff">${p.policy_code}</td>
+        <td>${fmt(p.client_name)}</td>
+        <td>${p.agent_name ? fmt(p.agent_name) : '<span style="color:#607090">Онлайн</span>'}</td>
+        <td style="font-size:0.78rem">${fmt(p.plate_number)}</td>
+        <td style="color:#aaffcc">${fmtNum(p.insurance_sum)}</td>
+        <td>${fmtDate(p.issue_date)}</td>
+        <td>${fmtDate(p.expiry_date)}</td>
+        <td><div class="policy-risks">${risksHtml}${addRiskHtml}</div></td>
+        <td>
+          <button class="btn btn-info btn-sm" onclick='editPolicy(${JSON.stringify(p)})'>Редагувати</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePolicy('${p.policy_code}')">Видалити</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) { showAlert('policies', e.message); }
+}
+
+function editPolicy(r) {
+  editingPolicy = r.policy_code;
+  const form = document.getElementById('policies-form');
+  form.policy_code.value = r.policy_code;
+  form.policy_code.readOnly = true;
+  form.insurance_sum.value = r.insurance_sum;
+  form.issue_date.value = fmtDate(r.issue_date);
+  form.expiry_date.value = fmtDate(r.expiry_date);
+  setTimeout(() => {
+    document.getElementById('policy-agent-select').value = r.agent_id || '';
+    document.getElementById('policy-client-select').value = r.client_id;
+    document.getElementById('policy-vehicle-select').value = r.vehicle_vin;
+  }, 100);
+  document.getElementById('policies-form-title').textContent = 'Редагувати поліс';
+  document.getElementById('policies-edit-label').textContent = `(редагування ${r.policy_code})`;
+}
+
+function cancelPoliciesEdit() {
+  editingPolicy = null;
+  document.getElementById('policies-form').reset();
+  document.getElementById('policies-form').policy_code.readOnly = false;
+  document.getElementById('policies-form-title').textContent = 'Додати поліс';
+  document.getElementById('policies-edit-label').textContent = '';
+}
+
+async function submitPoliciesForm(e) {
+  e.preventDefault();
+  const d = formData('policies-form');
+  if (!d.agent_id) d.agent_id = null;
+  try {
+    if (editingPolicy) {
+      await apiFetch(`${API_BASE}/policies/${editingPolicy}`, { method: 'PUT', body: JSON.stringify(d) });
+      showAlert('policies', 'Поліс оновлено успішно', 'success');
+    } else {
+      await apiFetch(`${API_BASE}/policies`, { method: 'POST', body: JSON.stringify(d) });
+      showAlert('policies', 'Поліс додано успішно', 'success');
+    }
+    cancelPoliciesEdit();
+    loadPolicies();
+  } catch (e) { showAlert('policies', e.message); }
+}
+
+async function deletePolicy(code) {
+  if (!confirm(`Видалити поліс ${code}?`)) return;
+  try {
+    await apiFetch(`${API_BASE}/policies/${code}`, { method: 'DELETE' });
+    showAlert('policies', 'Видалено успішно', 'success');
+    loadPolicies();
+  } catch (e) { showAlert('policies', e.message); }
+}
+
+async function addPolicyRisk(policyCode) {
+  const sel = document.getElementById(`add-risk-${policyCode}`);
+  const riskId = sel.value;
+  if (!riskId) return;
+  try {
+    await apiFetch(`${API_BASE}/policies/${policyCode}/risks`, { method: 'POST', body: JSON.stringify({ risk_id: riskId }) });
+    loadPolicies();
+  } catch (e) { showAlert('policies', e.message); }
+}
+
+async function removePolicyRisk(policyCode, riskId) {
+  if (!confirm('Видалити цей ризик з полісу?')) return;
+  try {
+    await apiFetch(`${API_BASE}/policies/${policyCode}/risks/${riskId}`, { method: 'DELETE' });
+    loadPolicies();
+  } catch (e) { showAlert('policies', e.message); }
+}
+
+// ===================== RISKS =====================
+let editingRisk = null;
+
+async function loadRisks() {
+  try {
+    const data = await apiFetch(`${API_BASE}/risks`);
+    renderTable('risks-tbody', data,
+      [r => r.id, r => fmt(r.risk_type)],
+      r => `<button class="btn btn-info btn-sm" onclick='editRisk(${JSON.stringify(r)})'>Редагувати</button>
+             <button class="btn btn-danger btn-sm" onclick="deleteRisk(${r.id})">Видалити</button>`
+    );
+  } catch (e) { showAlert('risks', e.message); }
+}
+
+function editRisk(r) {
+  editingRisk = r.id;
+  document.getElementById('risks-form').risk_type.value = r.risk_type;
+  document.getElementById('risks-form-title').textContent = 'Редагувати ризик';
+  document.getElementById('risks-edit-label').textContent = `(редагування ID ${r.id})`;
+}
+
+function cancelRisksEdit() {
+  editingRisk = null;
+  document.getElementById('risks-form').reset();
+  document.getElementById('risks-form-title').textContent = 'Додати тип ризику';
+  document.getElementById('risks-edit-label').textContent = '';
+}
+
+async function submitRisksForm(e) {
+  e.preventDefault();
+  const d = formData('risks-form');
+  try {
+    if (editingRisk) {
+      await apiFetch(`${API_BASE}/risks/${editingRisk}`, { method: 'PUT', body: JSON.stringify(d) });
+      showAlert('risks', 'Ризик оновлено', 'success');
+    } else {
+      await apiFetch(`${API_BASE}/risks`, { method: 'POST', body: JSON.stringify(d) });
+      showAlert('risks', 'Ризик додано', 'success');
+    }
+    cancelRisksEdit();
+    loadRisks();
+  } catch (e) { showAlert('risks', e.message); }
+}
+
+async function deleteRisk(id) {
+  if (!confirm(`Видалити ризик ID ${id}?`)) return;
+  try {
+    await apiFetch(`${API_BASE}/risks/${id}`, { method: 'DELETE' });
+    showAlert('risks', 'Видалено успішно', 'success');
+    loadRisks();
+  } catch (e) { showAlert('risks', e.message); }
+}
+
+// ===================== MARRIAGES =====================
+let editingMarriage = null;
+
+async function loadMarriages() {
+  try {
+    const [marriages, clients] = await Promise.all([apiFetch(`${API_BASE}/marriages`), apiFetch(`${API_BASE}/clients`)]);
+
+    // Married client IDs
+    const marriedIds = new Set();
+    marriages.forEach(m => { marriedIds.add(m.husband_id); marriedIds.add(m.wife_id); });
+
+    const availableForNew = editingMarriage
+      ? clients
+      : clients.filter(c => !marriedIds.has(c.person_id));
+
+    document.getElementById('marriage-husband-select').innerHTML =
+      '<option value="">-- Оберіть чоловіка --</option>' +
+      availableForNew.map(c => `<option value="${c.person_id}">${c.full_name}</option>`).join('');
+    document.getElementById('marriage-wife-select').innerHTML =
+      '<option value="">-- Оберіть дружину --</option>' +
+      availableForNew.map(c => `<option value="${c.person_id}">${c.full_name}</option>`).join('');
+
+    renderTable('marriages-tbody', marriages,
+      [r => r.id, r => fmt(r.husband_name), r => fmt(r.wife_name), r => fmtDate(r.marriage_date)],
+      r => `<button class="btn btn-info btn-sm" onclick='editMarriage(${JSON.stringify(r)})'>Редагувати</button>
+             <button class="btn btn-danger btn-sm" onclick="deleteMarriage(${r.id})">Видалити</button>`
+    );
+  } catch (e) { showAlert('marriages', e.message); }
+}
+
+function editMarriage(r) {
+  editingMarriage = r.id;
+  loadMarriages(); // reload to show all clients in dropdowns
+  setTimeout(() => {
+    document.getElementById('marriage-husband-select').value = r.husband_id;
+    document.getElementById('marriage-wife-select').value = r.wife_id;
+    document.getElementById('marriages-form').marriage_date.value = fmtDate(r.marriage_date);
+    document.getElementById('marriages-form-title').textContent = 'Редагувати шлюб';
+    document.getElementById('marriages-edit-label').textContent = `(редагування ID ${r.id})`;
+  }, 200);
+}
+
+function cancelMarriagesEdit() {
+  editingMarriage = null;
+  document.getElementById('marriages-form').reset();
+  document.getElementById('marriages-form-title').textContent = 'Зареєструвати шлюб';
+  document.getElementById('marriages-edit-label').textContent = '';
+  loadMarriages();
+}
+
+async function submitMarriagesForm(e) {
+  e.preventDefault();
+  const d = formData('marriages-form');
+  try {
+    if (editingMarriage) {
+      await apiFetch(`${API_BASE}/marriages/${editingMarriage}`, { method: 'PUT', body: JSON.stringify(d) });
+      showAlert('marriages', 'Шлюб оновлено', 'success');
+    } else {
+      await apiFetch(`${API_BASE}/marriages`, { method: 'POST', body: JSON.stringify(d) });
+      showAlert('marriages', 'Шлюб зареєстровано', 'success');
+    }
+    cancelMarriagesEdit();
+    loadMarriages();
+  } catch (e) { showAlert('marriages', e.message); }
+}
+
+async function deleteMarriage(id) {
+  if (!confirm(`Видалити запис про шлюб ID ${id}?`)) return;
+  try {
+    await apiFetch(`${API_BASE}/marriages/${id}`, { method: 'DELETE' });
+    showAlert('marriages', 'Видалено успішно', 'success');
+    loadMarriages();
+  } catch (e) { showAlert('marriages', e.message); }
+}
+
+// ===================== QUERIES =====================
+async function loadQueriesSection() {
+  // Load risks for Q5 dropdown
+  try {
+    const risks = await apiFetch(`${API_BASE}/risks`);
+    document.getElementById('q5-risk_type').innerHTML =
+      risks.map(r => `<option value="${r.risk_type}">${r.risk_type}</option>`).join('');
+  } catch {}
+
+  // Load clients for Q6 dropdown
+  try {
+    const clients = await apiFetch(`${API_BASE}/clients`);
+    document.getElementById('q6-client_id').innerHTML =
+      '<option value="">-- Оберіть клієнта --</option>' +
+      clients.map(c => `<option value="${c.person_id}">${c.full_name} (ID: ${c.person_id})</option>`).join('');
+  } catch {}
+}
+
+async function runQuery(n) {
+  const resultDiv = document.getElementById(`q${n}-results`);
+  resultDiv.innerHTML = '<div class="loading">Виконання запиту...</div>';
+
+  let url;
+  try {
+    switch (n) {
+      case 1: url = `${API_BASE}/queries/q1?min_sum=${document.getElementById('q1-min_sum').value || 0}`; break;
+      case 2: url = `${API_BASE}/queries/q2?max_year=${document.getElementById('q2-max_year').value || 2020}`; break;
+      case 3: url = `${API_BASE}/queries/q3?min_count=${document.getElementById('q3-min_count').value || 0}`; break;
+      case 4: url = `${API_BASE}/queries/q4?risk_level=${document.getElementById('q4-risk_level').value}`; break;
+      case 5: url = `${API_BASE}/queries/q5?risk_type=${encodeURIComponent(document.getElementById('q5-risk_type').value)}`; break;
+      case 6:
+        const cid = document.getElementById('q6-client_id').value;
+        if (!cid) { resultDiv.innerHTML = '<div style="color:#e94560;padding:10px">Оберіть клієнта</div>'; return; }
+        url = `${API_BASE}/queries/q6?client_id=${cid}`; break;
+      case 7: url = `${API_BASE}/queries/q7`; break;
+    }
+
+    const data = await apiFetch(url);
+    if (!data.length) {
+      resultDiv.innerHTML = '<div style="color:#607090;padding:10px;font-style:italic">Результатів не знайдено</div>';
+      return;
+    }
+
+    const keys = Object.keys(data[0]);
+    const colLabels = {
+      full_name: 'Повне ім\'я', inn_code: 'ІПН', risk_level: 'Рівень ризику',
+      policy_code: 'Код полісу', insurance_sum: 'Страхова сума',
+      vin_code: 'VIN', plate_number: 'Держ. номер', manufacture_year: 'Рік',
+      car_type: 'Тип ТЗ', owner_name: 'Власник', active_policies_count: 'Актив. поліси',
+      license_number: 'Ліцензія', start_date: 'Дата початку',
+      policies_count: 'К-ть полісів', total_sum: 'Загальна сума',
+      client_name: 'Клієнт', issue_date: 'Дата видачі', expiry_date: 'Дата закінч.',
+      risk_type: 'Тип ризику', person_id: 'ID', agent_name: 'Агент',
+      husband_name: 'Чоловік', wife_name: 'Дружина', marriage_date: 'Дата шлюбу'
+    };
+
+    const isNumCol = k => ['insurance_sum', 'total_sum'].includes(k);
+    const isDateCol = k => k.includes('date');
+
+    resultDiv.innerHTML = `
+      <div class="table-wrap">
+        <p style="color:#607090;font-size:0.8rem;margin-bottom:8px">Знайдено записів: ${data.length}</p>
+        <table>
+          <thead><tr>${keys.map(k => `<th>${colLabels[k] || k}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${data.map(row => `<tr>${keys.map(k => {
+              let v = row[k];
+              if (v === null || v === undefined) return '<td>—</td>';
+              if (isNumCol(k)) return `<td style="color:#aaffcc">${Number(v).toLocaleString('uk-UA')}</td>`;
+              if (isDateCol(k)) return `<td>${String(v).split('T')[0]}</td>`;
+              return `<td>${v}</td>`;
+            }).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (e) {
+    resultDiv.innerHTML = `<div style="color:#e94560;padding:10px">Помилка: ${e.message}</div>`;
+  }
+}
+
+// ===================== INIT =====================
+loadHome();
+</script>
+</body>
+</html>
