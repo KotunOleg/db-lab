@@ -103,32 +103,12 @@
     .edit-mode-label { color: #e94560; font-size: 0.78rem; margin-left: 5px; }
 
     /* SQL Log Panel */
-    #sql-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #080d18; border-top: 2px solid #e94560; z-index: 200; font-family: 'Consolas', 'Courier New', monospace; }
-    #sql-panel-header { display: flex; align-items: center; gap: 10px; padding: 7px 16px; cursor: pointer; user-select: none; }
-    #sql-panel-header:hover { background: #0f1525; }
-    .sql-panel-title { color: #e94560; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
-    .sql-op-badge { padding: 2px 7px; border-radius: 3px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
-    .sql-op-SELECT { background: #0e3318; color: #6effa8; }
-    .sql-op-INSERT { background: #0c1f4a; color: #80b8ff; }
-    .sql-op-UPDATE { background: #3a2800; color: #ffc966; }
-    .sql-op-DELETE { background: #3a0f0f; color: #ff9090; }
-    .sql-op-SQL    { background: #1e1e30; color: #aaaacc; }
-    #sql-panel-summary { color: #506070; font-size: 0.75rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Segoe UI', sans-serif; }
-    #sql-panel-toggle { color: #506070; font-size: 0.72rem; white-space: nowrap; }
-    #sql-panel-body { max-height: 0; overflow: hidden; transition: max-height 0.25s ease; }
-    #sql-panel-body.open { max-height: 340px; overflow-y: auto; }
-    #sql-current { padding: 10px 16px 6px; font-size: 0.82rem; line-height: 1.6; border-bottom: 1px solid #151f30; }
-    #sql-current-time { color: #354555; font-size: 0.7rem; margin-bottom: 4px; font-family: 'Segoe UI', sans-serif; }
-    #sql-current-params { color: #ce9178; font-size: 0.75rem; margin-top: 5px; }
-    #sql-history { }
-    .sql-hist-item { padding: 6px 16px; border-bottom: 1px solid #0e1620; display: flex; gap: 8px; align-items: baseline; }
-    .sql-hist-item:hover { background: #0c1525; }
-    .sql-hist-time { color: #2d3d4d; font-size: 0.68rem; font-family: 'Segoe UI', sans-serif; white-space: nowrap; }
-    .sql-hist-sql { color: #5a6a7a; font-size: 0.73rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-    .sql-kw   { color: #569cd6; font-weight: 600; }
-    .sql-fn   { color: #dcdcaa; }
-    .sql-param { color: #ce9178; }
-    #content { padding-bottom: 52px; }
+    #sql-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #111; border-top: 1px solid #333; z-index: 200; font-family: monospace; font-size: 0.8rem; }
+    #sql-panel-header { padding: 5px 12px; cursor: pointer; color: #888; user-select: none; }
+    #sql-panel-body { max-height: 0; overflow: hidden; }
+    #sql-panel-body.open { max-height: 260px; overflow-y: auto; }
+    #sql-log-text { padding: 8px 12px; color: #ccc; white-space: pre-wrap; word-break: break-all; }
+    #content { padding-bottom: 36px; }
   </style>
 </head>
 <body>
@@ -509,15 +489,9 @@
 
 <!-- SQL LOG PANEL -->
 <div id="sql-panel">
-  <div id="sql-panel-header" onclick="toggleSqlPanel()">
-    <span class="sql-panel-title">SQL Лог</span>
-    <span id="sql-op-badge" class="sql-op-badge sql-op-SQL">—</span>
-    <span id="sql-panel-summary">Очікування операцій...</span>
-    <span id="sql-panel-toggle">▲ розгорнути</span>
-  </div>
+  <div id="sql-panel-header" onclick="toggleSqlPanel()">SQL Лог ▲</div>
   <div id="sql-panel-body">
-    <div id="sql-current"><div id="sql-current-time"></div><div id="sql-current-sql" style="color:#4a5a6a;font-style:italic">Ще не виконано жодного запиту</div><div id="sql-current-params"></div></div>
-    <div id="sql-history"></div>
+    <div id="sql-log-text">Ще не виконано жодного запиту</div>
   </div>
 </div>
 
@@ -555,7 +529,29 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  refreshSqlLog();
   return data;
+}
+
+// ===================== SQL LOG PANEL =====================
+let sqlPanelOpen = false;
+
+function toggleSqlPanel() {
+  sqlPanelOpen = !sqlPanelOpen;
+  document.getElementById('sql-panel-body').classList.toggle('open', sqlPanelOpen);
+  document.getElementById('sql-panel-header').textContent = `SQL Лог ${sqlPanelOpen ? '▼' : '▲'}`;
+}
+
+async function refreshSqlLog() {
+  try {
+    const log = await fetch(`${API_BASE}/log`).then(r => r.json());
+    if (!log.length) return;
+    document.getElementById('sql-log-text').textContent = log.map(q => {
+      const t = new Date(q.time).toLocaleTimeString('uk-UA');
+      const params = q.params.length ? `\n-- params: ${JSON.stringify(q.params)}` : '';
+      return `[${t}] ${q.sql}${params}`;
+    }).join('\n\n');
+  } catch {}
 }
 
 function formData(formId) {
