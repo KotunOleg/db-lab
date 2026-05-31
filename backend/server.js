@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { getLog } = require('./queryLogger');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use('/api/policies', require('./routes/policies'));
 app.use('/api/risks', require('./routes/risks'));
 app.use('/api/marriages', require('./routes/marriages'));
 app.use('/api/queries', require('./routes/queries'));
+app.get('/api/log', (req, res) => res.json(getLog()));
 
 // Fallback to index.html for SPA
 app.get('*', (req, res) => {
